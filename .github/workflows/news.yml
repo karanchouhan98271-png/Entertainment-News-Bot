@@ -1,7 +1,6 @@
+name: Entertainment News Bot
 
-  name: Entertainment News Bot
-
-on:
+"on":
   workflow_dispatch:
   schedule:
     - cron: "0 */3 * * *"
