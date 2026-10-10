@@ -1,4 +1,5 @@
-name: Entertainment News Bot
+
+  name: Entertainment News Bot
 
 on:
   workflow_dispatch:
