@@ -35,29 +35,43 @@ HEADERS = {
 
 # ==========================================
 # TELEGRAM MESSAGE
-# ==========================================
-
-def send_telegram(text):
+# =========================================
+   def send_telegram(text):
     url = (
         f"https://api.telegram.org/bot"
         f"{TELEGRAM_BOT_TOKEN}/sendMessage"
     )
-        response = requests.post(
-        url,
-        data=payload,
-        timeout=30
-    )
+
+    payload = {
+        "chat_id": TELEGRAM_CHAT_ID,
+        "text": text
+    }
 
     try:
-        response.raise_for_status()
-    except requests.exceptions.HTTPError:
-        print("Telegram API error:", response.status_code, response.text)
+        response = requests.post(
+            url,
+            data=payload,
+            timeout=30
+        )
+
+        result = response.json()
+
+        if not response.ok or not result.get("ok"):
+            print(
+                "Telegram API error:",
+                response.status_code,
+                response.text
+            )
+            response.raise_for_status()
+            raise RuntimeError(
+                f"Telegram API rejected message: {result}"
+            )
+
+        return result
+
+    except requests.exceptions.RequestException as error:
+        print(f"Telegram request failed: {error}")
         raise
-
-    result = response.json()
-
-    if not result.get("ok"):
-        raise RuntimeError(f"Telegram API error: {result}")
 # ==========================================
 # NEWS SOURCES
 # ==========================================
