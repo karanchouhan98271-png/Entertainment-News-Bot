@@ -53,7 +53,11 @@ def send_telegram(text):
         timeout=30
     )
 
+    try:
     response.raise_for_status()
+except requests.exceptions.HTTPError:
+    print("Telegram API error:", response.status_code, response.text)
+    raise
 
     result = response.json()
 
