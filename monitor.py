@@ -42,28 +42,22 @@ def send_telegram(text):
         f"https://api.telegram.org/bot"
         f"{TELEGRAM_BOT_TOKEN}/sendMessage"
     )
-
-    response = requests.post(
+        response = requests.post(
         url,
-        data={
-            "chat_id": TELEGRAM_CHAT_ID,
-            "text": text,
-            "disable_web_page_preview": True
-        },
+        data=payload,
         timeout=30
     )
 
     try:
-    response.raise_for_status()
-except requests.exceptions.HTTPError:
-    print("Telegram API error:", response.status_code, response.text)
-    raise
+        response.raise_for_status()
+    except requests.exceptions.HTTPError:
+        print("Telegram API error:", response.status_code, response.text)
+        raise
 
     result = response.json()
 
     if not result.get("ok"):
-        raise RuntimeError("Telegram message could not be sent.")
-
+        raise RuntimeError(f"Telegram API error: {result}")
 # ==========================================
 # NEWS SOURCES
 # ==========================================
