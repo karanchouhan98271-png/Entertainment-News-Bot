@@ -34,7 +34,7 @@ jobs:
           find . -maxdepth 3 -type f
 
       - name: Run Entertainment News Bot
-        working-directory: ${{ github.workspace }}/Entertainment-News-Bot
+        working-directory: ${{ github.workspace }}
       
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
