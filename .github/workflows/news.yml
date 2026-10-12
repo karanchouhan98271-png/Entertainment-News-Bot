@@ -1,66 +1,53 @@
 name: Entertainment News Bot
 
 on:
-workflow_dispatch:
-schedule:
-- cron: "0 */3 * * *"
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */3 * * *"
 
 permissions:
-contents: read
-
-concurrency:
-group: entertainment-news-bot
-cancel-in-progress: false
+  contents: read
 
 jobs:
-run-entertainment-news:
-name: Fetch and Send Entertainment News
-runs-on: ubuntu-latest
-timeout-minutes: 15
+  run-entertainment-news:
+    runs-on: ubuntu-latest
 
-steps:
-  - name: Checkout repository
-    uses: actions/checkout@v4
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-  - name: Set up Python
-    uses: actions/setup-python@v5
-    with:
-      python-version: "3.11"
-      cache: pip
-      cache-dependency-path: requirements.txt
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
-  - name: Install dependencies
-    run: |
-      python -m pip install --upgrade pip
-      python -m pip install -r requirements.txt
+      - name: Check repository files
+        run: |
+          echo "Current directory:"
+          pwd
+          echo "Repository files:"
+          ls -la
+          echo "Finding monitor.py:"
+          find . -type f -name "monitor.py"
 
-  - name: Check required secrets
-    env:
-      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-      YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
-    run: |
-      python - <<'PY'
-      import os
-      required = [
-          "TELEGRAM_BOT_TOKEN",
-          "TELEGRAM_CHAT_ID",
-          "GEMINI_API_KEY",
-          "YOUTUBE_API_KEY",
-      ]
-      missing = [key for key in required if not os.environ.get(key)]
-      if missing:
-          print("Missing GitHub Actions secrets:", ", ".join(missing))
-          raise SystemExit(1)
-      print("All required secrets are configured.")
-      PY
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-  - name: Run Entertainment News Bot
-    env:
-      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-      YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
-      PYTHONUNBUFFERED: "1"
-    run: python -u monitor.py
+      - name: Run Entertainment News Bot
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+        run: |
+          if [ -f "monitor.py" ]; then
+            python monitor.py
+          elif [ -f "Entertainment-News-Bot/monitor.py" ]; then
+            cd Entertainment-News-Bot
+            python monitor.py
+          else
+            echo "ERROR: monitor.py not found"
+            exit 1
+          fi
