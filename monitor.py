@@ -36,7 +36,7 @@ HEADERS = {
 # ==========================================
 # TELEGRAM MESSAGE
 # =========================================
-   def send_telegram(text):
+def send_telegram(text):
     url = (
         f"https://api.telegram.org/bot"
         f"{TELEGRAM_BOT_TOKEN}/sendMessage"
