@@ -1,6 +1,6 @@
 name: Entertainment News Bot
 
-"on":
+on:
   workflow_dispatch:
   schedule:
     - cron: "0 */3 * * *"
@@ -8,38 +8,112 @@ name: Entertainment News Bot
 permissions:
   contents: read
 
+concurrency:
+  group: entertainment-news-bot
+  cancel-in-progress: false
+
 jobs:
   run-entertainment-news:
+    name: Run Entertainment News Bot
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
+      # 1. Download repository files
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 2. Set up Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements.txt
 
-      - name: Install dependencies
+      # 3. Confirm the actual repository directory
+      - name: Inspect repository
+        shell: bash
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          set -eu
 
-      - name: Check repository 
-                files
-        run: |
+          echo "=== Current directory ==="
           pwd
-          ls -la
-          find . -maxdepth 3 -type f
 
-      - name: Run Entertainment News Bot
+          echo "=== Repository root files ==="
+          ls -la
+
+          echo "=== Searching for required files ==="
+          find . -maxdepth 4 -type f \
+            \( -name "monitor.py" -o -name "requirements.txt" \) \
+            -print
+
+      # 4. Validate required files before installation
+      - name: Validate project files
+        shell: bash
+        run: |
+          set -eu
+
+          if [ ! -f "$GITHUB_WORKSPACE/monitor.py" ]; then
+            echo "::error::monitor.py was not found in the repository root."
+            echo "Check the Inspect repository step for its actual location."
+            exit 1
+          fi
+
+          if [ ! -f "$GITHUB_WORKSPACE/requirements.txt" ]; then
+            echo "::error::requirements.txt was not found in the repository root."
+            exit 1
+          fi
+
+          echo "Project files found successfully."
+
+      # 5. Install Python dependencies
+      - name: Install dependencies
+        shell: bash
         working-directory: ${{ github.workspace }}
-      
+        run: |
+          set -eu
+
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      # 6. Check secret availability without printing secret values
+      - name: Validate configuration
+        shell: bash
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
-        run: python monitor.py
-      
+        run: |
+          set -eu
+
+          check_secret() {
+            name="$1"
+            value="$2"
+
+            if [ -z "$value" ]; then
+              echo "::error::$name is missing from GitHub Actions Secrets."
+              exit 1
+            fi
+
+            echo "$name is configured."
+          }
+
+          check_secret "TELEGRAM_BOT_TOKEN" "$TELEGRAM_BOT_TOKEN"
+          check_secret "TELEGRAM_CHAT_ID" "$TELEGRAM_CHAT_ID"
+          check_secret "GEMINI_API_KEY" "$GEMINI_API_KEY"
+          check_secret "YOUTUBE_API_KEY" "$YOUTUBE_API_KEY"
+
+      # 7. Run the bot from the repository root
+      - name: Run Entertainment News Bot
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+        run: |
+          set -eu
+          python -u "$GITHUB_WORKSPACE/monitor.py"
